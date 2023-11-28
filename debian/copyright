@@ -1,22 +1,42 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: template-repository
-Source: https://github.com/deepin-community/template-repository
+Upstream-Name: libtracefs
+Upstream-Contact: Steven Rostedt <rostedt@goodmis.org>
+Source: https://git.kernel.org/pub/scm/libs/libtrace/libtracefs.git/
 
-Files: *
-Copyright: 2023 Tsic404 <liuheng@deepin.org>
-License: GPL-2+
- This package is free software; you can redistribute it and/or modify
+Files:     *
+Copyright: 2019-2022, VMware, Tzvetomir Stoyanov <tz.stoyanov@gmail.com>
+           2008-2010, Red Hat Inc, Steven Rostedt <srostedt@redhat.com>
+           2020-2021, VMware, Inc.
+           2021, VMware Inc, Steven Rostedt <rostedt@goodmis.org>
+           2022, Google, Inc
+           2022, Google Inc, Steven Rostedt <rostedt@goodmis.org>
+           2023, Daniel Wagner, SUSE LLC
+License:   LGPL-2.1
+
+Files:     scripts/features.mk
+Copyright: 2008-2010, Red Hat Inc, Steven Rostedt <srostedt@redhat.com>
+License:   GPL-2.0
+
+Files:     debian/*
+Copyright: 2020-2023, Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+License:   LGPL-2.1
+
+License: LGPL-2.1
+ This module is free software; you can redistribute it and/or modify
+ it under the terms of the GNU Lesser General Public License version
+ 2.1 as published by the Free Software Foundation.
+ .
+ This module is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ .
+ On Debian systems, the complete text of the license can be found in
+ the file /usr/share/common-licenses/LGPL-2.1
+
+License: GPL-2.0
+ This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 2 of the License, or
- (at your option) any later version.
+ the Free Software Foundation; version 2 dated June, 1991.
  .
- This package is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- .
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <https://www.gnu.org/licenses/>
- .
- On Debian systems, the complete text of the GNU General
- Public License version 2 can be found in "/usr/share/common-licenses/GPL-2".
+ On Debian systems, the complete text of version 2 of the GNU General
+ Public License can be found in '/usr/share/common-licenses/GPL-2'.
