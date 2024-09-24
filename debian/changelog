@@ -1,3 +1,19 @@
+libtracefs (1.8.1-1) unstable; urgency=medium
+
+  * New upstream version 1.8.1
+  * d/libtracefs1.symbols: remove MISSING symbols.
+  * d/control: Depend on pkgconf instead of pkg-config.
+
+ -- Sudip Mukherjee <sudipm.mukherjee@gmail.com>  Sat, 27 Jul 2024 19:50:01 +0100
+
+libtracefs (1.8.0-1) unstable; urgency=medium
+
+  * New upstream version 1.8.0
+    - Update symbols.
+    - Update copyright.
+
+ -- Sudip Mukherjee <sudipm.mukherjee@gmail.com>  Tue, 16 Jan 2024 22:17:46 +0000
+
 libtracefs (1.7.0-1) unstable; urgency=medium
 
   [ Lucas Kanashiro ]

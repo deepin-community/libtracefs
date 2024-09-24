@@ -6,7 +6,7 @@ project(
     'libtracefs', ['c'],
     meson_version: '>= 0.50.0',
     license: 'LGPL-2.1',
-    version: '1.7',
+    version: '1.8.1',
     default_options: [
         'c_std=gnu99',
         'buildtype=debug',
@@ -16,7 +16,8 @@ project(
 
 library_version = meson.project_version()
 
-libtraceevent_dep = dependency('libtraceevent', version: '>= 1.7.0', required: true)
+libtraceevent_dep = dependency('libtraceevent', version: '>= 1.8.1', required: true)
+threads_dep = dependency('threads', required: true)
 cunit_dep = dependency('cunit', required : false)
 
 prefixdir = get_option('prefix')
@@ -34,10 +35,14 @@ incdir = include_directories(['include'])
 
 subdir('src')
 subdir('include')
-if cunit_dep.found()
+if get_option('utest') and cunit_dep.found()
     subdir('utest')
 endif
+if get_option('samples')
 subdir('samples')
+endif
+
+if get_option('doc')
 subdir('Documentation')
 
 custom_target(
@@ -45,3 +50,4 @@ custom_target(
     output: 'docs',
     depends: [html, man],
     command: ['echo'])
+endif

@@ -123,6 +123,8 @@ __hidden void trace_put_instance(struct tracefs_instance *instance)
 		close(instance->ftrace_marker_raw_fd);
 
 	free(instance->trace_dir);
+	free(instance->followers);
+	free(instance->missed_followers);
 	free(instance->name);
 	pthread_mutex_destroy(&instance->lock);
 	free(instance);
@@ -215,6 +217,7 @@ struct tracefs_instance *tracefs_instance_create(const char *name)
 	return inst;
 
 error:
+	tracefs_put_tracing_file(path);
 	tracefs_instance_free(inst);
 	return NULL;
 }
@@ -400,6 +403,18 @@ ssize_t tracefs_instance_get_buffer_size(struct tracefs_instance *instance, int 
 	return size;
 }
 
+/**
+ * tracefs_instance_set_buffer_size - modify the ring buffer size
+ * @instance: The instance to modify (NULL for the top level)
+ * @size: The size in kilobytes to to set the size to
+ * @cpu: the CPU to set it to (-1 for all CPUs)
+ *
+ * Sets the size of the ring buffer per CPU buffers. If @cpu is negative,
+ * then it sets the ring buffer size for all the per CPU buffers, otherwise
+ * it only sets the per CPU buffer specified by @cpu.
+ *
+ * Returns 0 on success and -1 on error.
+ */
 int tracefs_instance_set_buffer_size(struct tracefs_instance *instance, size_t size, int cpu)
 {
 	char *path;
@@ -423,6 +438,43 @@ int tracefs_instance_set_buffer_size(struct tracefs_instance *instance, size_t s
 		free(path);
 	}
 	free(val);
+
+	return ret < 0 ? -1 : 0;
+}
+
+/**
+ * tracefs_instance_get_subbuf_size - return the sub-buffer size of the ring buffer
+ * @instance: The instance to get the buffer size from
+ *
+ * Returns the sub-buffer size in kilobytes.
+ * Returns -1 on error.
+ */
+ssize_t tracefs_instance_get_subbuf_size(struct tracefs_instance *instance)
+{
+	long long size;
+	int ret;
+
+	ret = tracefs_instance_file_read_number(instance, "buffer_subbuf_size_kb", &size);
+	if (ret < 0)
+		return ret;
+
+	return size;
+}
+
+/**
+ * tracefs_instance_set_buffer_size - modify the ring buffer sub-buffer size
+ * @instance: The instance to modify (NULL for the top level)
+ * @size: The size in kilobytes to to set the sub-buffer size to
+ *
+ * Sets the sub-buffer size in kilobytes for the given ring buffer.
+ *
+ * Returns 0 on success and -1 on error.
+ */
+int tracefs_instance_set_subbuf_size(struct tracefs_instance *instance, size_t size)
+{
+	int ret;
+
+	ret = tracefs_instance_file_write_number(instance, "buffer_subbuf_size_kb", size);
 
 	return ret < 0 ? -1 : 0;
 }
@@ -489,6 +541,27 @@ int tracefs_instance_file_write(struct tracefs_instance *instance,
 				 const char *file, const char *str)
 {
 	return instance_file_write(instance, file, str, O_WRONLY | O_TRUNC);
+}
+
+/**
+ * tracefs_instance_file_write_number - Write integer from a trace file.
+ * @instance: ftrace instance, can be NULL for the top instance
+ * @file: name of the file
+ * @res: The integer to write to @file
+ *
+ * Returns 0 if the write succeeds, -1 on error.
+ */
+int tracefs_instance_file_write_number(struct tracefs_instance *instance,
+				       const char *file, size_t val)
+{
+	char buf[64];
+	int ret;
+
+	snprintf(buf, 64, "%zd\n", val);
+
+	ret = tracefs_instance_file_write(instance, file, buf);
+
+	return ret > 1 ? 0 : -1;
 }
 
 /**
@@ -1369,6 +1442,7 @@ static void clear_func_filter(struct tracefs_instance *instance, const char *fil
 		filter[len+1] = '\0';
 		tracefs_instance_file_append(instance, file, filter);
 	}
+	free(buf);
 }
 
 static void clear_func_filters(struct tracefs_instance *instance)
@@ -1386,6 +1460,17 @@ static void clear_func_filters(struct tracefs_instance *instance)
 }
 
 /**
+ * tracefs_instance_clear - clear the trace buffer
+ * @instance: The instance to clear the trace for.
+ *
+ * Returns 0 on succes, -1 on error
+ */
+int tracefs_instance_clear(struct tracefs_instance *instance)
+{
+	return tracefs_instance_file_clear(instance, "trace");
+}
+
+/**
  * tracefs_instance_reset - Reset a ftrace instance to its default state
  * @instance - a ftrace instance to be reseted
  *
@@ -1397,15 +1482,19 @@ void tracefs_instance_reset(struct tracefs_instance *instance)
 	int has_trigger = -1;
 	char **systems;
 	struct stat st;
+	char **file_list = NULL;
+	int list_size = 0;
 	char **events;
 	char *file;
 	int i, j;
+	int ret;
 
 	tracefs_trace_off(instance);
 	disable_func_stack_trace_instance(instance);
 	tracefs_tracer_clear(instance);
 	tracefs_instance_file_write(instance, "events/enable", "0");
 	tracefs_instance_file_write(instance, "set_ftrace_pid", "");
+	tracefs_instance_file_write(instance, "max_graph_depth", "0");
 	tracefs_instance_file_clear(instance, "trace");
 
 	systems = tracefs_event_systems(NULL);
@@ -1429,8 +1518,15 @@ void tracefs_instance_reset(struct tracefs_instance *instance)
 					else
 						has_trigger = 1;
 				}
-				if (has_trigger)
-					clear_trigger(file);
+				if (has_trigger) {
+					ret = clear_trigger(file);
+					if (ret) {
+						char **list;
+						list = tracefs_list_add(file_list, file);
+						if (list)
+							file_list = list;
+					}
+				}
 				tracefs_put_tracing_file(file);
 			}
 			tracefs_list_free(events);
@@ -1438,6 +1534,26 @@ void tracefs_instance_reset(struct tracefs_instance *instance)
 		tracefs_list_free(systems);
 	}
 
+	while (file_list && list_size != tracefs_list_size(file_list)) {
+		char **list = file_list;
+
+		list_size = tracefs_list_size(file_list);
+		file_list = NULL;
+		for (i = 0; list[i]; i++) {
+			file = list[i];
+			ret = clear_trigger(file);
+			if (ret) {
+				char **tlist;
+				tlist = tracefs_list_add(file_list, list[i]);
+				if (tlist)
+					file_list = tlist;
+			}
+		}
+		tracefs_list_free(list);
+	}
+	tracefs_list_free(file_list);
+
+	tracefs_instance_file_write(instance, "synthetic_events", " ");
 	tracefs_instance_file_write(instance, "error_log", " ");
 	tracefs_instance_file_write(instance, "trace_clock", "local");
 	tracefs_instance_file_write(instance, "set_event_pid", "");

@@ -6,6 +6,7 @@
 #ifndef _TRACE_FS_LOCAL_H
 #define _TRACE_FS_LOCAL_H
 
+#include <tracefs.h>
 #include <pthread.h>
 
 #define __hidden __attribute__((visibility ("hidden")))
@@ -49,6 +50,17 @@ struct tracefs_instance {
 	int				nr_missed_followers;
 	bool				pipe_keep_going;
 	bool				iterate_keep_going;
+};
+
+struct tracefs_buffer_stat {
+	ssize_t				entries;
+	ssize_t				overrun;
+	ssize_t				commit_overrun;
+	ssize_t				bytes;
+	long long			oldest_ts;
+	long long			now_ts;
+	ssize_t				dropped_events;
+	ssize_t				read_events;
 };
 
 extern const struct tep_format_field common_stacktrace;
@@ -104,6 +116,11 @@ int trace_append_filter(char **filter, unsigned int *state,
 			const char *field_name,
 			enum tracefs_compare compare,
 			 const char *val);
+
+void *trace_mmap(int fd, struct kbuffer *kbuf);
+void trace_unmap(void *mapping);
+int trace_mmap_load_subbuf(void *mapping, struct kbuffer *kbuf);
+int trace_mmap_read(void *mapping, void *buffer);
 
 struct tracefs_synth *synth_init_from(struct tep_handle *tep,
 				      const char *start_system,

@@ -10,11 +10,13 @@ OBJS += tracefs-tools.o
 OBJS += tracefs-marker.o
 OBJS += tracefs-kprobes.o
 OBJS += tracefs-hist.o
+OBJS += tracefs-stats.o
 OBJS += tracefs-filter.o
 OBJS += tracefs-dynevents.o
 OBJS += tracefs-eprobes.o
 OBJS += tracefs-uprobes.o
 OBJS += tracefs-record.o
+OBJS += tracefs-mmap.o
 ifeq ($(VSOCK_DEFINED), 1)
 OBJS += tracefs-vsock.o
 endif

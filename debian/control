@@ -3,7 +3,7 @@ Priority: optional
 Maintainer: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
 Build-Depends:
  debhelper-compat (= 13), libcunit1-dev, libtraceevent-dev (>= 1:1.3.0),
- pkg-config, asciidoc, xmlto, source-highlight, flex, bison
+ pkgconf, asciidoc, xmlto, source-highlight, flex, bison
 Standards-Version: 4.6.2
 Section: libs
 Homepage: https://git.kernel.org/pub/scm/libs/libtrace/libtracefs.git
